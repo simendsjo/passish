@@ -145,7 +145,53 @@
 
   (define +prefix+ (string:concat (with-default "~" (alt (env:get "PASSWORD_STORE_DIR")
                                                          (env:get "HOME")))
-                                  "/.password-store"))
+                                  "/.password-store/"))
+
+  ;; Should Coalton define these for all types defined in the cl package?
+  (repr :native cl:pathname)
+  (define-type Pathname)
+
+  (declare pathname->string (Pathname -> String))
+  (define (pathname->string path)
+    (lisp String (path)
+      (cl:namestring path)))
+
+  (declare directory-files (String -> String -> List Pathname))
+  (define (directory-files path pattern)
+    (lisp (List Pathname) (path pattern)
+      (uiop:directory-files path pattern)))
+
+  ;; This might be useful in the coalton library
+  (declare without-prefix (String -> String -> String))
+  (define (without-prefix prefix text)
+    (with-default text (string:strip-prefix prefix text)))
+
+  ;; This might be useful in the coalton library
+  (declare without-suffix (String -> String -> String))
+  (define (without-suffix suffix text)
+    (with-default text (string:strip-suffix suffix text)))
+
+  ;; Why couldn't I find this? Search again
+  (declare id (:a -> :a))
+  (define (id x) x)
+
+  ;; Probably exists under a different name
+  ;; iter:unwrappable! is pretty close and more general
+  (declare choose ((:a -> Optional :b) -> (List :a) -> (List :b)))
+  (define (choose f xs)
+    (pipe xs
+          (map f)
+          (list:filter optional:some?)
+          (map unwrap)))
+
+  ;; FIXME: Doesn't search through subfolders
+  (declare all-passwords (Unit -> List String))
+  (define (all-passwords)
+    (pipe (directory-files +prefix+ "**/*.gpg")
+          (map pathname->string)
+          (map (string:strip-suffix ".gpg"))
+          (choose id)
+          (map (without-prefix +prefix+))))
 
   (declare key->path (String -> String))
   (define (key->path key)
@@ -193,7 +239,27 @@
                  (let key = (string:substring x 0 i))
                  (let value = (string:substring x (+ i 2) (string:length x)))
                  (Tuple key value))
-               meta))))
+               meta)))
+
+  ;; This probably exists somewhere
+  (declare flip ((:a -> :b -> :c) -> (:b -> :a -> :c)))
+  (define (flip f)
+    (fn (b a)
+      (f a b)))
+
+  (declare passfile-contains (String -> String -> Boolean))
+  (define (passfile-contains pattern text)
+    (lisp Boolean (pattern text)
+      (cl:if (cl:search pattern text :test 'cl:equalp)
+             True
+             False)))
+
+  (declare find-passwords (List String -> List String))
+  (define (find-passwords patterns)
+    (pipe (all-passwords)
+          (list:filter (fn (pass) (list:any ((flip passfile-contains) pass) patterns)))
+          list:remove-duplicates
+          list:sort)))
 
 ;; Original pass help text:
 ;; Usage:
@@ -236,10 +302,11 @@
 
 (cl:defun show/handler (cmd)
   (cl:let* ((file (cl:nth 0 (clingon:command-arguments cmd)))
+            ;; TODO: If "file" is a subpath, print all files in this subpath
+            (lines (passfile-lines file))
             (clip? (clingon:opt-is-set-p cmd :clip))
             (clip-value (cl:when clip?
                           (clingon:getopt cmd :clip)))
-            (lines (passfile-lines file))
             (selected (cl:if clip?
                              (cl:nth (cl:- clip-value 1) lines)
                              lines)))
@@ -252,6 +319,7 @@
 (cl:defun show/command ()
   (clingon:make-command
    :name "show"
+   :aliases '("ls" "list")
    :description "Show existing password and optionally put it on the clipboard. If put on the clipboard, it will be cleared in 45 seconds."
    :handler #'show/handler
    :options (cl:list
@@ -261,6 +329,20 @@
               :short-name #\c
               :long-name "clip"
               :key :clip))))
+
+;; TODO: calling find-passwords outside a coalton block isn't safe (I think),
+;; but calling in a coalton block doesn't return the list, but a function.
+;; TODO: This only outputs very raw output without the tree style
+(cl:defun find/handler (cmd)
+  (cl:format cl:t "~{~a~%~}" (find-passwords (clingon:command-arguments cmd))))
+
+(cl:defun find/command ()
+  (clingon:make-command
+   :name "find"
+   :aliases '("search")
+   :description "List passwords that match pass-names."
+   :handler #'find/handler
+   :options '()))
 
 (cl:defun patch-args-for-clip (args cl:&aux (result (cl:copy-list args)))
   (cl:dolist (spec (cl:list (cl:cons "-c" "-c1")
@@ -280,7 +362,8 @@
    :handler (cl:lambda (cmd)
               (clingon:print-usage-and-exit cmd cl:t))
    :sub-commands (cl:list
-                  (show/command))))
+                  (show/command)
+                  (find/command))))
 
 (cl:defun main ()
   (cl:let ((app (show/main))
