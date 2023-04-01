@@ -45,19 +45,19 @@
 
 (defun show/handler (cmd)
   (let* ((file (nth 0 (clingon:command-arguments cmd)))
-            ;; TODO: If "file" is a subpath, print all files in this subpath
-            (lines (passish::passfile-lines file))
-            (clip? (clingon:opt-is-set-p cmd :clip))
-            (clip-value (when clip?
-                          (clingon:getopt cmd :clip)))
-            (selected (if clip?
-                             (nth (- clip-value 1) lines)
-                             lines)))
+         ;; TODO: If "file" is a subpath, print all files in this subpath
+         (lines (passish::passfile-lines file))
+         (clip? (clingon:opt-is-set-p cmd :clip))
+         (clip-value (when clip?
+                       (clingon:getopt cmd :clip)))
+         (selected (if clip?
+                       (nth (- clip-value 1) lines)
+                       lines)))
     (if clip?
-           (progn
-             (passish/utils::set-clipboard selected)
-             (format t "Copied ~a to clipboard.~%" file))
-           (format t "~{~a~%~}" selected))))
+        (progn
+          (passish/utils::set-clipboard selected)
+          (format t "Copied ~a to clipboard.~%" file))
+        (format t "~{~a~%~}" selected))))
 
 (defun show/command ()
   (clingon:make-command
@@ -89,13 +89,13 @@
 
 (defun patch-args-for-clip (args &aux (result (copy-list args)))
   (dolist (spec (list (cons "-c" "-c1")
-                            (cons "--clip" "--clip=1"))
-                   result)
+                      (cons "--clip" "--clip=1"))
+                result)
     (let* ((old (car spec))
-              (new (cdr spec))
-              (opt (member old result :test 'equal))
-              (val (cadr opt))
-              (int? (when val (parse-integer val :radix 10 :junk-allowed t))))
+           (new (cdr spec))
+           (opt (member old result :test 'equal))
+           (val (cadr opt))
+           (int? (when val (parse-integer val :radix 10 :junk-allowed t))))
       (when (and opt (not int?))
         (nsubst new old result :test 'equal)))))
 
@@ -110,5 +110,5 @@
 
 (defun main ()
   (let ((app (show/main))
-           (args (patch-args-for-clip (uiop:command-line-arguments))))
+        (args (patch-args-for-clip (uiop:command-line-arguments))))
     (clingon:run app args)))

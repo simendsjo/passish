@@ -51,7 +51,7 @@
     (unless (fs:file-exists? passfile)
       (return (make-list)))
     (let content = (run-gpg (make-list "--decrypt" passfile)))
-    (let lines = (split #\newline content))
+    (let lines = (split #\n ewline content))
     lines)
 
   (declare passfile-data (String -> (hashtable:HashTable String String)))

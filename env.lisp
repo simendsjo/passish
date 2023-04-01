@@ -19,10 +19,10 @@
 
   (declare get-list (String -> (Optional (List String))))
   (define get-list
-    (.> get
-        (map (split #\space))))
+    (\.> get
+         (map (split #\s pace))))
 
   (declare get-paths (String -> (Optional (List String))))
   (define get-paths
-    (.> get
-        (map (split #\:)))))
+    (\.> get
+         (map (split #\:)))))
