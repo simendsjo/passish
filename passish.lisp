@@ -261,6 +261,10 @@
           list:remove-duplicates
           list:sort)))
 
+(cl:defpackage #:passish/cli
+  (:use :cl))
+
+(in-package :passish/cli)
 ;; Original pass help text:
 ;; Usage:
 ;;     pass init [--path=subfolder,-p subfolder] gpg-id...
@@ -300,29 +304,29 @@
 ;;     pass version
 ;;         Show version information.
 
-(cl:defun show/handler (cmd)
-  (cl:let* ((file (cl:nth 0 (clingon:command-arguments cmd)))
+(defun show/handler (cmd)
+  (let* ((file (nth 0 (clingon:command-arguments cmd)))
             ;; TODO: If "file" is a subpath, print all files in this subpath
-            (lines (passfile-lines file))
+            (lines (passish::passfile-lines file))
             (clip? (clingon:opt-is-set-p cmd :clip))
-            (clip-value (cl:when clip?
+            (clip-value (when clip?
                           (clingon:getopt cmd :clip)))
-            (selected (cl:if clip?
-                             (cl:nth (cl:- clip-value 1) lines)
+            (selected (if clip?
+                             (nth (- clip-value 1) lines)
                              lines)))
-    (cl:if clip?
-           (cl:progn
-             (set-clipboard selected)
-             (cl:format cl:t "Copied ~a to clipboard.~%" file))
-           (cl:format cl:t "~{~a~%~}" selected))))
+    (if clip?
+           (progn
+             (passish/utils::set-clipboard selected)
+             (format t "Copied ~a to clipboard.~%" file))
+           (format t "~{~a~%~}" selected))))
 
-(cl:defun show/command ()
+(defun show/command ()
   (clingon:make-command
    :name "show"
    :aliases '("ls" "list")
    :description "Show existing password and optionally put it on the clipboard. If put on the clipboard, it will be cleared in 45 seconds."
    :handler #'show/handler
-   :options (cl:list
+   :options (list
              (clingon:make-option
               :integer
               :description "Line number in the password file to copy to the clipboard. 0 means the whole file."
@@ -333,10 +337,10 @@
 ;; TODO: calling find-passwords outside a coalton block isn't safe (I think),
 ;; but calling in a coalton block doesn't return the list, but a function.
 ;; TODO: This only outputs very raw output without the tree style
-(cl:defun find/handler (cmd)
-  (cl:format cl:t "~{~a~%~}" (find-passwords (clingon:command-arguments cmd))))
+(defun find/handler (cmd)
+  (format cl:t "~{~a~%~}" (passish::find-passwords (clingon:command-arguments cmd))))
 
-(cl:defun find/command ()
+(defun find/command ()
   (clingon:make-command
    :name "find"
    :aliases '("search")
@@ -344,28 +348,28 @@
    :handler #'find/handler
    :options '()))
 
-(cl:defun patch-args-for-clip (args cl:&aux (result (cl:copy-list args)))
-  (cl:dolist (spec (cl:list (cl:cons "-c" "-c1")
-                            (cl:cons "--clip" "--clip=1"))
+(defun patch-args-for-clip (args &aux (result (copy-list args)))
+  (dolist (spec (list (cons "-c" "-c1")
+                            (cons "--clip" "--clip=1"))
                    result)
-    (cl:let* ((old (cl:car spec))
-              (new (cl:cdr spec))
-              (opt (cl:member old result :test 'cl:equal))
-              (val (cl:cadr opt))
-              (int? (cl:when val (cl:parse-integer val :radix 10 :junk-allowed cl:t))))
-      (cl:when (cl:and opt (cl:not int?))
-        (cl:nsubst new old result :test 'cl:equal)))))
+    (let* ((old (car spec))
+              (new (cdr spec))
+              (opt (member old result :test 'equal))
+              (val (cadr opt))
+              (int? (when val (parse-integer val :radix 10 :junk-allowed t))))
+      (when (and opt (not int?))
+        (nsubst new old result :test 'equal)))))
 
-(cl:defun show/main ()
+(defun show/main ()
   (clingon:make-command
    :name "pass"
-   :handler (cl:lambda (cmd)
-              (clingon:print-usage-and-exit cmd cl:t))
-   :sub-commands (cl:list
+   :handler (lambda (cmd)
+              (clingon:print-usage-and-exit cmd t))
+   :sub-commands (list
                   (show/command)
                   (find/command))))
 
-(cl:defun main ()
-  (cl:let ((app (show/main))
+(defun main ()
+  (let ((app (show/main))
            (args (patch-args-for-clip (uiop:command-line-arguments))))
     (clingon:run app args)))
