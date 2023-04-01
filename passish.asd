@@ -11,4 +11,10 @@
   :entry-point "passish/cli::main"
   :depends-on (#:coalton #:alexandria #:serapeum #:trivial-package-local-nicknames #:split-sequence #:trivial-clipboard #:clingon)
   :serial t
-  :components ((:file "passish")))
+  :components ((:file "ctnicks")
+               (:file "utils")
+               (:file "env")
+               (:file "fs")
+               (:file "passish")
+               (:file "cli")
+               ))
