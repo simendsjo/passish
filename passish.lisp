@@ -36,7 +36,12 @@
         #:coalton-library/classes
         #:trivial-package-local-nicknames
         #:split-sequence)
-  (:export #:set-clipboard
+  (:export #:id
+           #:flip
+           #:choose
+           #:without-prefix
+           #:without-suffix
+           #:set-clipboard
            #:get-clipboard))
 
 (cl:in-package :passish/utils)
@@ -44,6 +49,35 @@
 (named-readtables:in-readtable coalton:coalton)
 
 (coalton-toplevel
+  ;; Why couldn't I find this? Search again
+  (declare id (:a -> :a))
+  (define (id x) x)
+
+  ;; This probably exists somewhere
+  (declare flip ((:a -> :b -> :c) -> (:b -> :a -> :c)))
+  (define (flip f)
+    (fn (b a)
+      (f a b)))
+
+  ;; Probably exists under a different name
+  ;; iter:unwrappable! is pretty close and more general
+  (declare choose ((:a -> Optional :b) -> (List :a) -> (List :b)))
+  (define (choose f xs)
+    (pipe xs
+          (map f)
+          (list:filter optional:some?)
+          (map unwrap)))
+
+  ;; This might be useful in the coalton library
+  (declare without-prefix (String -> String -> String))
+  (define (without-prefix prefix text)
+    (with-default text (string:strip-prefix prefix text)))
+
+  ;; This might be useful in the coalton library
+  (declare without-suffix (String -> String -> String))
+  (define (without-suffix suffix text)
+    (with-default text (string:strip-suffix suffix text)))
+
   (declare set-clipboard (String -> Unit))
   (define (set-clipboard text)
     (lisp Unit (text)
@@ -124,13 +158,12 @@
         #:trivial-package-local-nicknames
         #:passish/utils
         #:split-sequence)
-  (:local-nicknames (:env #:passish/env))
   (:local-nicknames (:env #:passish/env)
-   (:fs #:passish/fs)
-   (:list #:coalton-library/list)
-   (:string #:coalton-library/string)
-   (:hashtable #:coalton-library/hashtable)
-   (:tuple #:coalton-library/tuple)))
+                    (:fs #:passish/fs)
+                    (:list #:coalton-library/list)
+                    (:string #:coalton-library/string)
+                    (:hashtable #:coalton-library/hashtable)
+                    (:tuple #:coalton-library/tuple)))
 (cl:in-package :passish)
 
 (named-readtables:in-readtable coalton:coalton)
@@ -160,29 +193,6 @@
   (define (directory-files path pattern)
     (lisp (List Pathname) (path pattern)
       (uiop:directory-files path pattern)))
-
-  ;; This might be useful in the coalton library
-  (declare without-prefix (String -> String -> String))
-  (define (without-prefix prefix text)
-    (with-default text (string:strip-prefix prefix text)))
-
-  ;; This might be useful in the coalton library
-  (declare without-suffix (String -> String -> String))
-  (define (without-suffix suffix text)
-    (with-default text (string:strip-suffix suffix text)))
-
-  ;; Why couldn't I find this? Search again
-  (declare id (:a -> :a))
-  (define (id x) x)
-
-  ;; Probably exists under a different name
-  ;; iter:unwrappable! is pretty close and more general
-  (declare choose ((:a -> Optional :b) -> (List :a) -> (List :b)))
-  (define (choose f xs)
-    (pipe xs
-          (map f)
-          (list:filter optional:some?)
-          (map unwrap)))
 
   ;; FIXME: Doesn't search through subfolders
   (declare all-passwords (Unit -> List String))
@@ -240,12 +250,6 @@
                  (let value = (string:substring x (+ i 2) (string:length x)))
                  (Tuple key value))
                meta)))
-
-  ;; This probably exists somewhere
-  (declare flip ((:a -> :b -> :c) -> (:b -> :a -> :c)))
-  (define (flip f)
-    (fn (b a)
-      (f a b)))
 
   (declare passfile-contains (String -> String -> Boolean))
   (define (passfile-contains pattern text)
