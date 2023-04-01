@@ -44,20 +44,18 @@
 ;;         Show version information.
 
 (defun show/handler (cmd)
-  (let* ((file (nth 0 (clingon:command-arguments cmd)))
-         ;; TODO: If "file" is a subpath, print all files in this subpath
-         (lines (passish::passfile-lines file))
-         (clip? (clingon:opt-is-set-p cmd :clip))
-         (clip-value (when clip?
-                       (clingon:getopt cmd :clip)))
-         (selected (if clip?
-                       (nth (- clip-value 1) lines)
-                       lines)))
-    (if clip?
-        (progn
-          (passish/utils::set-clipboard selected)
-          (format t "Copied ~a to clipboard.~%" file))
-        (format t "~{~a~%~}" selected))))
+  (let* ((arg (nth 0 (clingon:command-arguments cmd)))
+         (passfile (concatenate 'string passish::+prefix+ arg)))
+    (cond
+      ((uiop:directory-exists-p passfile)
+       (format t "~{~a~%~}" (passish:all-passwords passfile)))
+      ((not (uiop:file-exists-p passfile))
+       (format t "Error: ~a is not in the password store.~%" arg))
+      ((clingon:opt-is-set-p cmd :clip)
+       (passish/utils:set-clipboard (nth (- (clingon:getopt cmd :clip) 1)
+                                         (passish:passfile-lines arg))))
+      (t
+       (format t "~{~a~%~}" (passish:passfile-lines arg))))))
 
 (defun show/command ()
   (clingon:make-command
@@ -77,7 +75,7 @@
 ;; but calling in a coalton block doesn't return the list, but a function.
 ;; TODO: This only outputs very raw output without the tree style
 (defun find/handler (cmd)
-  (format cl:t "~{~a~%~}" (passish::find-passwords (clingon:command-arguments cmd))))
+  (format cl:t "~{~a~%~}" (passish:find-passwords (clingon:command-arguments cmd))))
 
 (defun find/command ()
   (clingon:make-command

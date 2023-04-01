@@ -3,6 +3,7 @@
         #:coalton-prelude
         #:passish/utils)
   (:export #:Pathname
+           #:string->pathname
            #:pathname->string
            #:directory-files
            #:file-exists?
@@ -16,6 +17,11 @@
   (repr :native cl:pathname)
   (define-type Pathname)
 
+  (declare string->pathname (String -> Pathname))
+  (define (string->pathname path)
+    (lisp Pathname (path)
+      (uiop:parse-native-namestring path)))
+
   (declare pathname->string (Pathname -> String))
   (define (pathname->string path)
     (lisp String (path)
@@ -25,7 +31,6 @@
   (define (directory-files path pattern)
     (lisp (List Pathname) (path pattern)
       (uiop:directory-files path pattern)))
-
 
   (declare file-exists? (String -> Boolean))
   (define (file-exists? path)
