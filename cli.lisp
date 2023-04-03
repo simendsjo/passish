@@ -1,9 +1,10 @@
-(cl:pushnew :deploy-console cl:*features*)
-
 (cl:defpackage #:passish/cli
+  (:documentation "CLI for passish")
   (:use :cl))
 
 (in-package :passish/cli)
+(cl:pushnew :deploy-console cl:*features*)
+
 ;; Original pass help text:
 ;; Usage:
 ;;     pass init [--path=subfolder,-p subfolder] gpg-id...
@@ -49,11 +50,12 @@
     (cond
       ((uiop:directory-exists-p passfile)
        (format t "~{~a~%~}" (passish:all-passwords passfile)))
-      ((not (uiop:file-exists-p passfile))
+      ((not (uiop:file-exists-p (concatenate 'string passfile ".gpg")))
        (format t "Error: ~a is not in the password store.~%" arg))
       ((clingon:opt-is-set-p cmd :clip)
        (passish/utils:set-clipboard (nth (- (clingon:getopt cmd :clip) 1)
-                                         (passish:passfile-lines arg))))
+                                         (passish:passfile-lines arg)))
+       (format t "Copied ~a to clipboard. CLIPBOARD CLEARING NOT YET IMPLEMENTED.~%" arg))
       (t
        (format t "~{~a~%~}" (passish:passfile-lines arg))))))
 
@@ -61,19 +63,17 @@
   (clingon:make-command
    :name "show"
    :aliases '("ls" "list")
-   :description "Show existing password and optionally put it on the clipboard. If put on the clipboard, it will be cleared in 45 seconds."
+   :description "Show existing password and optionally put it on the clipboard."
+   :long-description "When matching a path, all passwords recursively under that path are shown. When matching a password file, that file is used."
    :handler #'show/handler
    :options (list
              (clingon:make-option
               :integer
-              :description "Line number in the password file to copy to the clipboard. 0 means the whole file."
+              :description "Line number in the password file to copy to the clipboard. Without an argument, it's the same as -c1. Does not yet clear the clipboard!"
               :short-name #\c
               :long-name "clip"
               :key :clip))))
 
-;; TODO: calling find-passwords outside a coalton block isn't safe (I think),
-;; but calling in a coalton block doesn't return the list, but a function.
-;; TODO: This only outputs very raw output without the tree style
 (defun find/handler (cmd)
   (format cl:t "~{~a~%~}" (passish:find-passwords (clingon:command-arguments cmd))))
 
@@ -82,6 +82,7 @@
    :name "find"
    :aliases '("search")
    :description "List passwords that match pass-names."
+   :long-description "Lists all passwords that case-insensive match any of the supplied parts of the name or path."
    :handler #'find/handler
    :options '()))
 
@@ -99,7 +100,9 @@
 
 (defun show/main ()
   (clingon:make-command
-   :name "pass"
+   :name "passish"
+   :description "A password manager."
+   :long-description "A partial implementation of the pass (password-store) command line utility. Mostly to get an implementation working on Windows where bash can be problematic. Use at your own risk!"
    :handler (lambda (cmd)
               (clingon:print-usage-and-exit cmd t))
    :sub-commands (list

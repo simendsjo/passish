@@ -10,7 +10,7 @@
 (cl:in-package :passish)
 
 (coalton-toplevel
-  (define +password-key+ "__PASSISH_PASSWORD__")
+  (define +password-key+ "__PASSISH_SECRET__")
   (define +password-store-gpg-opts+ (with-default (make-list)
                                       (env:get-list "PASSWORD_STORE_GPG_OPTS")))
 
@@ -23,6 +23,8 @@
 
   (declare all-passwords (String -> List String))
   (define (all-passwords prefix)
+    "Returns a list of all passwords, i.g. +PREFIX+/prefix/**/*.gpg. +PREFIX+
+and .gpg are stripped from the output."
     (pipe (fs:directory-files prefix "**/*.gpg")
           (map fs:pathname->string)
           (map (string:strip-suffix ".gpg"))
@@ -31,10 +33,13 @@
 
   (declare key->path (String -> String))
   (define (key->path key)
+    "Returns the path to the password file for the given key. E.g. foo/bar
+returns +PREFIX+/foo/bar.gpg."
     (fold string:concat "" (make-list +prefix+ key ".gpg")))
 
   (declare run-program ((List String) -> String))
   (define (run-program args)
+    "Runs a program, and returns the output. See uiop:run-program."
     (lisp String (args)
       (cl:let ((result (uiop:run-program args :output '(:string :stripped t))))
         (cl:if (cl:string= result "")
@@ -43,10 +48,12 @@
 
   (declare run-gpg ((List String) -> String))
   (define (run-gpg args)
+    "Runs gpg with the given arguments. See run-program."
     (run-program (fold append (make-list) (make-list (make-list "gpg") +gpg-opts+ args))))
 
   (declare passfile-lines (String -> (List String)))
   (define (passfile-lines key)
+    "Returns all lines from the password file for the given key."
     (let passfile = (key->path key))
     (unless (fs:file-exists? passfile)
       (return (make-list)))
@@ -56,6 +63,8 @@
 
   (declare passfile-data (String -> (hashtable:HashTable String String)))
   (define (passfile-data key)
+    "Returns a hashtable containing the password and metadata for the given
+key."
     ;; First line is password, rest is key: value pairs
     (let lines = (passfile-lines key))
     (when (list:null? lines)
@@ -77,6 +86,8 @@
 
   (declare passfile-contains (String -> String -> Boolean))
   (define (passfile-contains pattern text)
+    "True if the given pattern is found in the given text. See cl:search and
+cl:equalp."
     (lisp Boolean (pattern text)
       (cl:if (cl:search pattern text :test 'cl:equalp)
              True
@@ -84,6 +95,8 @@
 
   (declare find-passwords (List String -> List String))
   (define (find-passwords patterns)
+    "Find all passwords where the password file contains any of the given
+patterns."
     (pipe (all-passwords +prefix+)
           (filter (fn (pass) (any ((flip passfile-contains) pass) patterns)))
           remove-duplicates

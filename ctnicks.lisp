@@ -1,7 +1,8 @@
 (named-readtables:in-readtable coalton:coalton)
 
-;; Temporary package only to host the custom defpackage
 (cl:defpackage #:ctnicks
+  (:documentation "Dummy package to host the custom defpackage macro. Only
+  exists to give shortnames to coalton-library/packages.")
   (:export #:defpackage))
 
 (cl:in-package :ctnicks)
