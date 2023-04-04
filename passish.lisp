@@ -7,7 +7,10 @@
   (:export #:all-passwords
            #:find-passwords
            #:passfile-lines))
+
 (cl:in-package :passish)
+
+(named-readtables:in-readtable coalton:coalton)
 
 (coalton-toplevel
   (define +password-key+ "__PASSISH_SECRET__")

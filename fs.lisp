@@ -13,6 +13,8 @@
 
 (cl:in-package :passish/fs)
 
+(named-readtables:in-readtable coalton:coalton)
+
 (coalton-toplevel
   ;; Should Coalton define these for all types defined in the cl package?
   (repr :native cl:pathname)

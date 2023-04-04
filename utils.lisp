@@ -10,6 +10,8 @@
 
 (cl:in-package :passish/utils)
 
+(named-readtables:in-readtable coalton:coalton)
+
 (coalton-toplevel
   ;; Probably exists under a different name
   ;; iter:unwrappable! is pretty close and more general

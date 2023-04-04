@@ -9,6 +9,8 @@
 
 (cl:in-package :passish/env)
 
+(named-readtables:in-readtable coalton:coalton)
+
 (coalton-toplevel
  (declare get (String -> Optional String))
  (define (get key)
