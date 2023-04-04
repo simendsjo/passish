@@ -3,7 +3,7 @@
   exists to give shortnames to coalton-library/packages.")
   (:export #:defpackage))
 
-(cl:in-package :ctnicks)
+(in-package :ctnicks)
 
 (named-readtables:in-readtable coalton:coalton)
 

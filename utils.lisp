@@ -8,7 +8,7 @@
            #:set-clipboard
            #:get-clipboard))
 
-(cl:in-package :passish/utils)
+(in-package :passish/utils)
 
 (named-readtables:in-readtable coalton:coalton)
 

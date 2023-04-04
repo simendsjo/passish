@@ -11,7 +11,7 @@
            #:directory-exists?
            #:exists?))
 
-(cl:in-package :passish/fs)
+(in-package :passish/fs)
 
 (named-readtables:in-readtable coalton:coalton)
 

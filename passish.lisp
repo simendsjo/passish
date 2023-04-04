@@ -8,7 +8,7 @@
            #:find-passwords
            #:passfile-lines))
 
-(cl:in-package :passish)
+(in-package :passish)
 
 (named-readtables:in-readtable coalton:coalton)
 

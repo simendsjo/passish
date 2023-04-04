@@ -7,7 +7,7 @@
            #:get-list
            #:get-paths))
 
-(cl:in-package :passish/env)
+(in-package :passish/env)
 
 (named-readtables:in-readtable coalton:coalton)
 
