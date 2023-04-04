@@ -11,16 +11,19 @@
 
 (coalton-toplevel
   (define +password-key+ "__PASSISH_SECRET__")
-  (define +password-store-gpg-opts+ (with-default (make-list)
-                                      (env:get-list "PASSWORD_STORE_GPG_OPTS")))
 
-  (define +gpg-opts+ (append +password-store-gpg-opts+
-                             (make-list "--quiet" "--yes" "--compress-algo=none" "--no-encrypt-to")))
+  (define +password-store-gpg-opts+
+      (pipe (env:get-list "PASSWORD_STORE_GPG_OPTS")
+            (with-default (make-list))))
+
+  (define +gpg-opts+
+      (pipe (make-list "--quiet" "--yes" "--compress-algo=none" "--no-encrypt-to")
+            (append +password-store-gpg-opts+)))
 
   (define +prefix+
     (pipe (alt (env:get "PASSWORD_STORE_DIR") (env:get "HOME"))
           (with-default "~")
-          (fn (x) (string:concat x "/.password-store/"))
+          ((flip string:concat) "/.password-store/")
           ;; We do this to canonicalize, e.g. replace \\foo with /foo and still
           ;; keep it as a string
           fs:string->pathname
@@ -40,7 +43,8 @@ and .gpg are stripped from the output."
   (define (key->path key)
     "Returns the path to the password file for the given key. E.g. foo/bar
 returns +PREFIX+/foo/bar.gpg."
-    (fold string:concat "" (make-list +prefix+ key ".gpg")))
+    (pipe (make-list +prefix+ key ".gpg")
+          (fold string:concat "")))
 
   (declare run-program ((List String) -> String))
   (define (run-program args)
