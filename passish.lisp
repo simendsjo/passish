@@ -17,9 +17,14 @@
   (define +gpg-opts+ (append +password-store-gpg-opts+
                              (make-list "--quiet" "--yes" "--compress-algo=none" "--no-encrypt-to")))
 
-  (define +prefix+ (string:concat (with-default "~" (alt (env:get "PASSWORD_STORE_DIR")
-                                                         (env:get "HOME")))
-                                  "/.password-store/"))
+  (define +prefix+
+    (pipe (alt (env:get "PASSWORD_STORE_DIR") (env:get "HOME"))
+          (with-default "~")
+          (fn (x) (string:concat x "/.password-store/"))
+          ;; We do this to canonicalize, e.g. replace \\foo with /foo and still
+          ;; keep it as a string
+          fs:string->pathname
+          fs:pathname->string))
 
   (declare all-passwords (String -> List String))
   (define (all-passwords prefix)
